@@ -1,19 +1,20 @@
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QLineEdit, 
-                               QPushButton, QHBoxLayout, QMessageBox, QSpinBox, QLabel, QComboBox, QCheckBox, QWidget, QScrollArea)
-from PySide6.QtCore import QThread, Signal, Qt
-from PySide6.QtGui import QPixmap
 import json
+from PySide6.QtCore import QThread, Signal, Qt
+from PySide6.QtWidgets import (
+    QDialog, QVBoxLayout, QFormLayout, QLineEdit, QPushButton, QHBoxLayout,
+    QMessageBox, QSpinBox, QLabel, QComboBox, QCheckBox, QWidget, QScrollArea
+)
+
 import config
 from .styles.dark_theme import apply_dark_theme
 from .styles import theme_manager
 from .change_password_dialog import ChangePasswordDialog
-import os
 
 class EmailTestWorker(QThread):
     """
-    Worker thread to send a test email without freezing the GUI.
+    Thread dédié à l'envoi d'email de test pour ne pas bloquer l'interface.
     """
-    result = Signal(bool, str)  # success (bool), message (str)
+    result = Signal(bool, str)
 
     def __init__(self, security_manager, email_config):
         super().__init__()
@@ -32,15 +33,15 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.security_manager = security_manager
         self.setWindowTitle("Paramètres Thanos")
-        # Taille et contraintes par défaut pour une UI plus large
+        
+        # Configuration de la fenêtre
         self.resize(900, 600)
         self.setMinimumSize(700, 450)
         apply_dark_theme(self)
-        self.worker = None  # To hold the thread instance
+        
+        self.worker = None
         self.setup_ui()
-        # Implémentation d'un système de thèmes de base
-        self.theme = getattr(config, 'THEME', 'dark')  # Thème par défaut
-        # Appel de la méthode pour appliquer le thème par défaut
+        self.theme = getattr(config, 'THEME', 'dark')
         self.change_theme(self.theme)
 
     def setup_ui(self):
@@ -177,7 +178,7 @@ class SettingsDialog(QDialog):
             with open(config.SETTINGS_FILE, 'w') as f:
                 json.dump(new_settings, f, indent=4)
             
-            # Update runtime config
+            # Mise à jour de la configuration en mémoire
             config.EMAIL_SENDER = new_settings["email_sender"]
             config.EMAIL_RECIPIENT = new_settings["email_recipient"]
             config.MAX_INCORRECT_ATTEMPTS_BEFORE_SECURITY_EVENTS = new_settings["max_attempts"]
@@ -185,7 +186,8 @@ class SettingsDialog(QDialog):
             config.SMTP_PORT = new_settings["smtp_port"]
             config.SMTP_USERNAME = new_settings["smtp_username"]
             config.SMTP_PASSWORD = new_settings["smtp_password"]
-            # Theme and security options
+            
+            # Options de thème et sécurité
             selected_theme = self.theme_combo.currentText()
             try:
                 config.THEME = selected_theme
@@ -195,10 +197,9 @@ class SettingsDialog(QDialog):
             config.EMAIL_ALERTS_ENABLED = bool(self.email_alerts_cb.isChecked())
 
 
-            # Persist theme and new options to settings file
+            # Sauvegarde persistante des options supplémentaires
             try:
                 with open(config.SETTINGS_FILE, 'w') as f:
-                    # Merge existing file with new fields
                     data = {
                         "email_sender": config.EMAIL_SENDER,
                         "email_recipient": config.EMAIL_RECIPIENT,
@@ -213,7 +214,6 @@ class SettingsDialog(QDialog):
                     }
                     json.dump(data, f, indent=4)
             except Exception:
-                # If saving extra fields fails, ignore and continue (file already written above)
                 pass
             
             QMessageBox.information(self, "Succès", "Paramètres enregistrés.")
@@ -222,18 +222,14 @@ class SettingsDialog(QDialog):
             QMessageBox.critical(self, "Erreur", f"Impossible d'enregistrer les paramètres: {e}")
 
     def open_change_password_dialog(self):
-
-        # Open dialog and pass current security manager
         try:
             dlg = ChangePasswordDialog(self.security_manager, self)
             dlg.exec()
         except Exception as e:
             QMessageBox.critical(self, "Erreur", f"Impossible d'ouvrir le dialogue: {e}")
 
-    # Méthode pour changer de thème
     def change_theme(self, theme):
-
-        # Use centralized theme manager to apply theme application-wide
+        """Applique le thème sélectionné à l'application."""
         try:
             theme_manager.apply_theme(theme)
             self.theme = theme

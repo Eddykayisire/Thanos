@@ -1,37 +1,33 @@
-# config.py
 import os
 import json
 
-# Application data directory
+# --- Chemins de l'application ---
 APP_DATA_DIR = os.path.join(os.path.expanduser("~"), ".thanos")
 VAULT_DB_FILE = os.path.join(APP_DATA_DIR, "vault.db")
 SETTINGS_FILE = os.path.join(APP_DATA_DIR, "settings.json")
 
-# --- Security Settings ---
-# Incorrect login attempts
+# --- Paramètres de Sécurité ---
 MAX_INCORRECT_ATTEMPTS_BEFORE_SECURITY_EVENTS = 5
 LOGIN_BLOCK_DELAY_SECONDS = 5
 
-# Security Photo Capture
-SECURITY_PHOTO_ENABLED = True # Set to True in settings to enable
+# --- Capture Photo ---
+SECURITY_PHOTO_ENABLED = True
 SECURITY_PHOTO_DIR = os.path.join(APP_DATA_DIR, "security_photos")
 
-# Email Alerts
-EMAIL_ALERTS_ENABLED = True # Set to True in settings to enable
-EMAIL_SENDER = os.getenv("THANOS_EMAIL_SENDER", "noreply@example.com") # Configure your sender email
-EMAIL_RECIPIENT = "" # Configure recipient
-SMTP_SERVER = os.getenv("THANOS_SMTP_SERVER", "smtp.example.com") # Configure your SMTP server
-SMTP_PORT = 587 # Common SMTP port (587 for TLS, 465 for SSL)
-SMTP_USERNAME = os.getenv("THANOS_SMTP_USERNAME", "apikey") # Configure your SMTP username
-SMTP_PASSWORD = os.getenv("THANOS_SMTP_PASSWORD", "") # Load from environment variable
-# Theme
-THEME = 'dark'  # 'dark' or 'light'
+# --- Alertes Email ---
+EMAIL_ALERTS_ENABLED = True
+EMAIL_SENDER = os.getenv("THANOS_EMAIL_SENDER", "noreply@example.com")
+EMAIL_RECIPIENT = ""
+SMTP_SERVER = os.getenv("THANOS_SMTP_SERVER", "smtp.example.com")
+SMTP_PORT = 587
+SMTP_USERNAME = os.getenv("THANOS_SMTP_USERNAME", "apikey")
+SMTP_PASSWORD = os.getenv("THANOS_SMTP_PASSWORD", "")
 
-# Security photo
-SECURITY_PHOTO_ENABLED = True
+# --- Apparence ---
+THEME = 'dark'
 
-# Load settings from JSON if exists
 def load_settings():
+    """Charge la configuration utilisateur depuis le fichier JSON si existant."""
     global MAX_INCORRECT_ATTEMPTS_BEFORE_SECURITY_EVENTS, EMAIL_RECIPIENT, EMAIL_SENDER, SMTP_USERNAME, SMTP_PASSWORD, SMTP_SERVER, SMTP_PORT
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -63,5 +59,3 @@ def load_settings():
             pass
 
 load_settings()
-                                     # In a real app, this should be encrypted or
-                                     # prompted securely. For this exercise, it's a placeholder.

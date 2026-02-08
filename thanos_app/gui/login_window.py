@@ -1,10 +1,11 @@
-# thanos_app/gui/login_window.py
 import os
 import datetime
 import threading
-from PySide6.QtWidgets import (QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLineEdit, 
-                               QPushButton, QLabel, QMessageBox, QSizePolicy, 
-                               QFrame, QGraphicsDropShadowEffect, QProgressBar)
+
+from PySide6.QtWidgets import (
+    QApplication, QDialog, QVBoxLayout, QLineEdit, QPushButton, QLabel,
+    QMessageBox, QFrame, QGraphicsDropShadowEffect
+)
 from PySide6.QtCore import Qt, QTimer, QPropertyAnimation
 from PySide6.QtGui import QPixmap, QFont, QColor
 from thanos_app.core.vault import VaultManager, Vault
@@ -25,9 +26,9 @@ class LoginWindow(QDialog):
         self.vault: Vault | None = None
         self.db_manager = DatabaseManager(config.VAULT_DB_FILE)
         
-        # Buffer for events/photos when we don't have the master key yet
+        # Tampon pour les événements/photos avant déverrouillage du coffre
         self._pending_logs = [] 
-        # We still need a temporary manager for immediate actions like email (which doesn't need vault key)
+        # Manager temporaire pour actions immédiates (email) sans clé du coffre
         self._temp_security_manager = SecurityManager(self.db_manager, os.urandom(32))
 
         self._incorrect_attempts_count = 0
@@ -146,7 +147,7 @@ class LoginWindow(QDialog):
         if os.path.exists(config.VAULT_DB_FILE):
             try:
                 # Le fichier peut exister (créé par SecurityManager pour les logs),
-                # donc on vérifie la présence de la table de configuration 'vault_config'.
+                # on vérifie donc la présence de la table de configuration.
                 if not self.db_manager.conn:
                     self.db_manager.connect()
                 cursor = self.db_manager.conn.cursor()
@@ -207,13 +208,13 @@ class LoginWindow(QDialog):
 
         try:
             self.vault = VaultManager.open_vault(config.VAULT_DB_FILE, master_password)
-            # If successful, reset attempts and proceed
+            # Connexion réussie
             self._incorrect_attempts_count = 0
             self.status_label.setText("")
             
-            # Initialize security manager with the actual vault key
+            # Initialisation du manager de sécurité avec la vraie clé
             self.security_manager = SecurityManager(self.db_manager, self.vault.key) 
-            # Flush pending logs
+            # Traitement des logs et photos en attente
             self._flush_pending_logs()
             self._process_pending_photos()
             self.security_manager.log_event(LOG_EVENT_LOGIN_SUCCESS, {"method": "password"})
@@ -233,7 +234,7 @@ class LoginWindow(QDialog):
             # Force l'affichage immédiat des changements d'interface pour éviter l'impression de plantage
             QApplication.processEvents()
 
-            # Log incorrect attempt
+            # Enregistrement de la tentative échouée
             self._pending_logs.append((LOG_EVENT_INCORRECT_ATTEMPT, 
                                        {"attempt_number": self._incorrect_attempts_count, "error": str(e)}))
 
@@ -244,14 +245,14 @@ class LoginWindow(QDialog):
                 self._pending_logs.append((LOG_EVENT_SECURITY_TRIGGER, 
                                            {"attempts_count": self._incorrect_attempts_count}))
                 
-                # Capture photo to memory buffer (will be encrypted after successful login)
+                # Capture photo en mémoire (sera chiffrée après connexion réussie)
                 photo_bytes = self._temp_security_manager.capture_webcam_bytes()
                 
                 if not photo_bytes and not self._temp_security_manager.is_camera_available():
                     print("⚠️ ATTENTION: La librairie 'opencv-python' est manquante ou la caméra est introuvable.")
                     print("   Installez-la avec: pip install opencv-python")
                 
-                # Send email in background to prevent UI freeze
+                # Envoi d'email en arrière-plan
                 self._run_background_alert(self._incorrect_attempts_count)
                 
                 if photo_bytes:
@@ -270,10 +271,10 @@ class LoginWindow(QDialog):
     def _run_background_alert(self, attempts):
         def task():
             try:
-                # Create isolated connection for thread to avoid SQLite threading issues
+                # Connexion isolée pour le thread (évite les conflits SQLite)
                 db = DatabaseManager(config.VAULT_DB_FILE)
                 db.connect()
-                # Temp manager with random key (sufficient for sending email/logging unencrypted events)
+                # Manager temporaire (suffisant pour email et logs non chiffrés)
                 sm = SecurityManager(db, os.urandom(32))
                 sm.send_email_alert(attempts)
                 db.close()
@@ -287,7 +288,7 @@ class LoginWindow(QDialog):
             self.security_manager.log_event(event_type, details)
 
     def _save_temp_photo(self, photo_bytes):
-        # Save raw photo temporarily until login to persist across app restarts
+        # Sauvegarde temporaire de la photo brute (en attendant le chiffrement)
         if not os.path.exists(config.SECURITY_PHOTO_DIR):
             os.makedirs(config.SECURITY_PHOTO_DIR)
         
@@ -330,7 +331,7 @@ class LoginWindow(QDialog):
         try:
             VaultManager.create_vault(config.VAULT_DB_FILE, master_password)
             QMessageBox.information(self, "Succès", "Coffre-fort créé avec succès. Vous pouvez maintenant vous connecter.")
-            self._check_vault_exists() # Update UI
+            self._check_vault_exists()
             self.password_input.clear()
         except Exception as e:
             QMessageBox.critical(self, "Erreur", f"Impossible de créer le coffre-fort: {e}")
