@@ -1,0 +1,31 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Environnements Virtuels ---
+venv/
+.venv/
+env/
+
+# --- Variables d'environnement & Secrets (TRES IMPORTANT) ---
+.env
+.env.local
+
+# --- IDE (Configuration éditeur) ---
+.vscode/
+.idea/
+
+# --- Données d'application (si stockées localement) ---
+# Même si par défaut elles sont dans ~/.thanos, c'est une sécurité
+# si jamais vous déplacez le dossier de données dans le projet.
+*.db
+*.sqlite3
+settings.json
+security.log
+device.id
+security_photos/
+
+# --- Système ---
+.DS_Store
+Thumbs.db

@@ -1,0 +1,48 @@
+/* Base shared styles */
+/* Palette */
+:--fill-color: #22272e;
+
+/* Utils */
+/* Background Fill */
+.bg { background-color: var(--fill-color); }
+
+/* Text */
+h1 { font-size: 2rem; }
+
+QWidget { font-family: 'Segoe UI', sans-serif; }
+
+/* Button variants via property [variant] = primary | ghost | icon */
+QPushButton {
+	border-radius: 10px;
+	padding: 8px 12px;
+	font-size: 10pt;
+}
+QPushButton[variant="primary"] {
+	background-color: #4CAF50;
+	color: white;
+	font-weight: 600;
+}
+QPushButton[variant="primary"]:hover { background-color: #45a049; }
+QPushButton[variant="primary"]:pressed { background-color: #3e8e41; }
+
+QPushButton[variant="ghost"] {
+	background: transparent;
+	color: #ddd;
+	border: 1px solid transparent;
+}
+
+QPushButton[variant="icon"] {
+	background: transparent;
+	border: none;
+	padding: 6px;
+}
+
+QLineEdit { border-radius: 8px; padding: 8px; }
+QLabel[role="muted"] { color: #888; font-size: 9pt; }
+
+/* Layout helpers (applied via code) */
+QWidget { margin: 0; padding: 0; }
+
+/* Styles for main window */
+QMainWindow {
+}
