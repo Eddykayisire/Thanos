@@ -2,13 +2,14 @@ import json
 from PySide6.QtCore import QThread, Signal, Qt
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QFormLayout, QLineEdit, QPushButton, QHBoxLayout,
-    QMessageBox, QSpinBox, QLabel, QComboBox, QCheckBox, QWidget, QScrollArea
+    QMessageBox, QSpinBox, QLabel, QComboBox, QCheckBox, QWidget, QScrollArea, QFileDialog
 )
 
 import config
 from .styles.dark_theme import apply_dark_theme
 from .styles import theme_manager
 from .change_password_dialog import ChangePasswordDialog
+from thanos_app.core.vault import VaultManager
 
 class EmailTestWorker(QThread):
     """
@@ -98,6 +99,16 @@ class SettingsDialog(QDialog):
         self.change_master_btn = QPushButton("Changer le mot de passe principal")
         self.change_master_btn.clicked.connect(self.open_change_password_dialog)
         form.addRow(self.change_master_btn)
+
+        # ===== SECTION: Sauvegarde =====
+        backup_title = QLabel("💾 Sauvegarde et Restauration")
+        backup_title.setStyleSheet("font-weight: bold; font-size: 11pt; margin-top: 15px;")
+        form.addRow(backup_title)
+        
+        self.backup_btn = QPushButton("Créer une sauvegarde chiffrée")
+        self.backup_btn.clicked.connect(self.create_backup)
+        self.backup_btn.setStyleSheet("background-color: #1f6feb; color: white;")
+        form.addRow(self.backup_btn)
 
         layout.addWidget(scroll)
 
@@ -240,3 +251,39 @@ class SettingsDialog(QDialog):
             else:
                 self.setStyleSheet("background-color: white; color: black;")
             self.theme = theme
+
+    def create_backup(self):
+        # Demander MP et RK pour chiffrer la sauvegarde
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Sécurité de la sauvegarde")
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(QLabel("Pour sécuriser l'export, veuillez confirmer vos identifiants :"))
+        
+        pw_input = QLineEdit()
+        pw_input.setPlaceholderText("Mot de passe principal")
+        pw_input.setEchoMode(QLineEdit.Password)
+        layout.addWidget(pw_input)
+        
+        rk_input = QLineEdit()
+        rk_input.setPlaceholderText("Clé de récupération")
+        layout.addWidget(rk_input)
+        
+        btn = QPushButton("Confirmer et Sauvegarder")
+        btn.clicked.connect(dialog.accept)
+        layout.addWidget(btn)
+        
+        if dialog.exec():
+            mp = pw_input.text()
+            rk = rk_input.text().strip()
+            
+            if not mp or not rk:
+                QMessageBox.warning(self, "Erreur", "Tous les champs sont requis.")
+                return
+                
+            file_path, _ = QFileDialog.getSaveFileName(self, "Enregistrer la sauvegarde", "thanos_backup.enc", "Thanos Backup (*.enc)")
+            if file_path:
+                try:
+                    VaultManager.backup_vault(config.VAULT_DB_FILE, file_path, mp, rk)
+                    QMessageBox.information(self, "Succès", "Sauvegarde chiffrée créée avec succès.")
+                except Exception as e:
+                    QMessageBox.critical(self, "Erreur", f"Échec de la sauvegarde : {e}")

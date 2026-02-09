@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QPushButton, QAbstractItemView, QHeaderView, QMessageBox, QLineEdit, QComboBox, QFrame, QLabel
 )
 from PySide6.QtCore import QModelIndex, Qt, QSize, QSortFilterProxyModel
-from PySide6.QtGui import QIcon, QFont
+from PySide6.QtGui import QIcon, QFont, QPixmap, QColor
 import os
 from .styles.dark_theme import apply_dark_theme
 from thanos_app.core.vault import Vault
@@ -30,8 +30,23 @@ class MainWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
-        main_layout.setContentsMargins(24, 24, 24, 24)
+        main_layout.setContentsMargins(30, 30, 30, 30)
         main_layout.setSpacing(20)
+
+        # --- HEADER (Logo) ---
+        header_layout = QHBoxLayout()
+        logo_label = QLabel()
+        text_path = os.path.join(os.path.dirname(__file__), "styles", "icons", "logo_text.svg")
+        if os.path.exists(text_path):
+            pix = QPixmap(text_path)
+            logo_label.setPixmap(pix.scaled(180, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        else:
+            logo_label.setText("THANOS")
+            logo_label.setFont(QFont("Segoe UI", 24, QFont.Bold))
+            logo_label.setStyleSheet("color: #9C27B0; letter-spacing: 2px;")
+        header_layout.addWidget(logo_label)
+        header_layout.addStretch()
+        main_layout.addLayout(header_layout)
 
         toolbar_layout = QHBoxLayout()
         # Buttons with SVG icons
@@ -42,31 +57,62 @@ class MainWindow(QMainWindow):
 
         self.add_button = QPushButton("Ajouter")
         self.add_button.setIcon(add_icon)
-        self.add_button.setStyleSheet("background-color: #238636; color: white; border-radius: 6px; padding: 8px 16px; font-weight: bold;")
+        self.add_button.setCursor(Qt.PointingHandCursor)
+        self.add_button.setStyleSheet("""
+            QPushButton {
+                background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #238636, stop:1 #2ea043);
+                color: white; border-radius: 8px; padding: 10px 20px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1);
+            }
+            QPushButton:hover { background-color: #2ea043; }
+        """)
         toolbar_layout.addWidget(self.add_button)
 
         # Boutons d'action contextuels
         self.edit_button = QPushButton("Modifier")
-        self.edit_button.setStyleSheet("background-color: #1f6feb; color: white; border-radius: 6px; padding: 8px 16px; font-weight: bold;")
+        self.edit_button.setCursor(Qt.PointingHandCursor)
+        self.edit_button.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(31, 111, 235, 0.2); color: #58a6ff; border: 1px solid rgba(56, 139, 253, 0.4);
+                border-radius: 8px; padding: 10px 20px; font-weight: bold;
+            }
+            QPushButton:hover { background-color: rgba(31, 111, 235, 0.3); }
+            QPushButton:disabled { color: #484f58; border-color: #30363d; background: transparent; }
+        """)
         self.edit_button.clicked.connect(self.edit_selected_account)
         self.edit_button.setEnabled(False)
         toolbar_layout.addWidget(self.edit_button)
 
         self.delete_button = QPushButton("Supprimer")
-        self.delete_button.setStyleSheet("background-color: #da3633; color: white; border-radius: 6px; padding: 8px 16px; font-weight: bold;")
+        self.delete_button.setCursor(Qt.PointingHandCursor)
+        self.delete_button.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(218, 54, 51, 0.2); color: #f85149; border: 1px solid rgba(248, 81, 73, 0.4);
+                border-radius: 8px; padding: 10px 20px; font-weight: bold;
+            }
+            QPushButton:hover { background-color: rgba(218, 54, 51, 0.3); }
+            QPushButton:disabled { color: #484f58; border-color: #30363d; background: transparent; }
+        """)
         self.delete_button.clicked.connect(self.delete_selected_account)
         self.delete_button.setEnabled(False)
         toolbar_layout.addWidget(self.delete_button)
 
         self.security_btn = QPushButton("Journal de Sécurité")
         self.security_btn.setIcon(lock_icon)
-        self.security_btn.setStyleSheet("background-color: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 8px 16px;")
+        self.security_btn.setCursor(Qt.PointingHandCursor)
+        self.security_btn.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(255,255,255,0.05); color: #c9d1d9; border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 8px; padding: 10px 20px;
+            }
+            QPushButton:hover { background-color: rgba(255,255,255,0.1); }
+        """)
         self.security_btn.clicked.connect(self.show_security_logs)
         toolbar_layout.addWidget(self.security_btn)
 
         self.settings_btn = QPushButton("Paramètres")
         self.settings_btn.setIcon(settings_icon)
-        self.settings_btn.setStyleSheet("background-color: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 8px 16px;")
+        self.settings_btn.setCursor(Qt.PointingHandCursor)
+        self.settings_btn.setStyleSheet(self.security_btn.styleSheet())
         self.settings_btn.clicked.connect(self.show_settings)
         toolbar_layout.addWidget(self.settings_btn)
         
@@ -78,15 +124,22 @@ class MainWindow(QMainWindow):
         self.stats_labels = {}
         for title, color in [("Total Comptes", "#58a6ff"), ("Critiques", "#da3633"), ("Alertes Sécurité", "#d29922")]:
             card = QFrame()
-            card.setStyleSheet(f"background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; border-left: 4px solid {color};")
+            card.setStyleSheet(f"""
+                QFrame {{
+                    background-color: #161b22;
+                    border: 1px solid #30363d;
+                    border-radius: 12px;
+                    border-left: 4px solid {color};
+                }}
+            """)
             cl = QVBoxLayout(card)
             cl.setContentsMargins(20, 15, 20, 15)
             
             lbl_title = QLabel(title)
-            lbl_title.setStyleSheet("color: #8b949e; font-size: 10pt; font-weight: 600;")
+            lbl_title.setStyleSheet("color: #8b949e; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;")
             
             lbl_val = QLabel("0")
-            lbl_val.setFont(QFont("Segoe UI", 24, QFont.Bold))
+            lbl_val.setFont(QFont("Segoe UI", 28, QFont.Bold))
             lbl_val.setStyleSheet("color: #f0f6fc; border: none;")
             
             self.stats_labels[title] = lbl_val
@@ -101,13 +154,26 @@ class MainWindow(QMainWindow):
         filter_layout = QHBoxLayout()
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("🔍 Rechercher (Nom, Tags)...")
-        self.search_input.setStyleSheet("background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 8px; color: white;")
+        self.search_input.setStyleSheet("""
+            QLineEdit {
+                background-color: #0d1117;
+                border: 1px solid #30363d;
+                border-radius: 6px;
+                padding: 8px;
+                color: white;
+            }
+            QLineEdit:focus { border: 1px solid #58a6ff; }
+        """)
         self.search_input.textChanged.connect(self.filter_accounts)
         
         self.cat_filter = QComboBox()
         self.cat_filter.addItem("Toutes les catégories")
         self.cat_filter.addItems(CATEGORIES)
-        self.cat_filter.setStyleSheet("QComboBox { background-color: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 5px; color: white; }")
+        self.cat_filter.setStyleSheet("""
+            QComboBox { background-color: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 5px; color: white; min-width: 150px; }
+            QComboBox::drop-down { border: none; }
+            QComboBox::down-arrow { image: none; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid #8b949e; margin-right: 10px; }
+        """)
         self.cat_filter.currentTextChanged.connect(self.filter_accounts)
         
         filter_layout.addWidget(self.search_input)
@@ -145,11 +211,14 @@ class MainWindow(QMainWindow):
                 border: none;
                 border-bottom: 1px solid #30363d;
                 font-weight: bold;
+                text-transform: uppercase;
+                font-size: 12px;
             }
             QTableView::item {
                 padding: 8px;
                 border-bottom: 1px solid #21262d;
             }
+            QTableView::item:selected { border-radius: 4px; }
         """)
 
         main_layout.addLayout(toolbar_layout)
@@ -238,10 +307,33 @@ class MainWindow(QMainWindow):
 
     def edit_selected_account(self):
         index = self.table_view.currentIndex()
-        if index.isValid():
-            # On réutilise la logique existante via le dialogue de détail ou directement
-            # Ici on ouvre le détail qui a le bouton modifier, ou on peut ouvrir directement le dialogue d'édition
-            self.show_account_details(index)
+        if not index.isValid():
+            return
+        
+        row = index.row()
+        account_id = self.model.get_account_id_for_row(row)
+        if not account_id: return
+
+        try:
+            # Récupération des données et déchiffrement du mot de passe
+            account_data = self.vault.db.get_account(account_id)
+            if not account_data: return
+            
+            decrypted_password = self.vault.get_decrypted_password(account_id)
+            edit_data = dict(account_data)
+            edit_data['password'] = decrypted_password
+
+            dialog = AccountDialog(self, edit_data)
+            if dialog.exec():
+                data = dialog.get_data()
+                self.vault.update_account(
+                    account_id, data['name'], data['password'], 
+                    data['username'], data['url'], data['notes'],
+                    data['category'], data['importance'], data['tags']
+                )
+                self.load_accounts()
+        except Exception as e:
+            QMessageBox.critical(self, "Erreur", f"Impossible de modifier le compte : {e}")
 
     def delete_selected_account(self):
         index = self.table_view.currentIndex()

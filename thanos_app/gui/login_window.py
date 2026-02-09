@@ -3,10 +3,10 @@ import datetime
 import threading
 
 from PySide6.QtWidgets import (
-    QApplication, QDialog, QVBoxLayout, QLineEdit, QPushButton, QLabel,
+    QApplication, QDialog, QVBoxLayout, QLineEdit, QPushButton, QLabel, QInputDialog, QFileDialog,
     QMessageBox, QFrame, QGraphicsDropShadowEffect
 )
-from PySide6.QtCore import Qt, QTimer, QPropertyAnimation
+from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
 from PySide6.QtGui import QPixmap, QFont, QColor
 from thanos_app.core.vault import VaultManager, Vault
 from thanos_app.core.database import DatabaseManager
@@ -21,7 +21,7 @@ class LoginWindow(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Thanos - Connexion")
         self.showMaximized()
-        self.setStyleSheet("background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #0E1117, stop:1 #161B22);")
+        self.setStyleSheet("background: qradialgradient(cx:0.5, cy:0.5, radius: 1.2, fx:0.5, fy:0.5, stop:0 #161b22, stop:1 #000000);")
 
         self.vault: Vault | None = None
         self.db_manager = DatabaseManager(config.VAULT_DB_FILE)
@@ -40,6 +40,15 @@ class LoginWindow(QDialog):
 
         self.setup_ui()
         self._check_vault_exists()
+        
+        # Animation d'apparition en fondu
+        self.setWindowOpacity(0)
+        self.anim = QPropertyAnimation(self, b"windowOpacity")
+        self.anim.setDuration(800)
+        self.anim.setStartValue(0)
+        self.anim.setEndValue(1)
+        self.anim.setEasingCurve(QEasingCurve.OutCubic)
+        self.anim.start()
 
     def setup_ui(self):
         # Layout principal centré
@@ -49,19 +58,19 @@ class LoginWindow(QDialog):
         # Carte centrale
         self.card = QFrame()
         self.card.setObjectName("LoginCard")
-        self.card.setFixedSize(480, 650)
+        self.card.setFixedSize(440, 600)
         self.card.setStyleSheet("""
             #LoginCard {
-                background-color: #1e2228;
-                border-radius: 16px;
-                border: 1px solid #333;
+                background-color: rgba(22, 27, 34, 0.95);
+                border-radius: 24px;
+                border: 1px solid rgba(255, 255, 255, 0.08);
             }
         """)
         
         # Ombre portée
         shadow = QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(50)
-        shadow.setColor(QColor(0, 0, 0, 180))
+        shadow.setBlurRadius(60)
+        shadow.setColor(QColor(0, 0, 0, 120))
         self.card.setGraphicsEffect(shadow)
 
         card_layout = QVBoxLayout(self.card)
@@ -70,21 +79,27 @@ class LoginWindow(QDialog):
 
         # Logo / Icône
         icon_label = QLabel()
-        icon_path = os.path.join(os.path.dirname(__file__), "styles", "icons", "lock.svg")
+        icon_path = os.path.join(os.path.dirname(__file__), "styles", "icons", "logo_icon.svg")
         if os.path.exists(icon_path):
             pix = QPixmap(icon_path)
-            icon_label.setPixmap(pix.scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon_label.setPixmap(pix.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         icon_label.setAlignment(Qt.AlignCenter)
         
         # Titre
-        title = QLabel("Thanos")
+        title = QLabel()
+        text_path = os.path.join(os.path.dirname(__file__), "styles", "icons", "logo_text.svg")
+        if os.path.exists(text_path):
+            pix = QPixmap(text_path)
+            title.setPixmap(pix.scaled(280, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        else:
+            title.setText("Thanos")
+            title.setFont(QFont("Segoe UI", 28, QFont.Bold))
+            title.setStyleSheet("color: #ffffff; margin-bottom: 5px;")
         title.setAlignment(Qt.AlignCenter)
-        title.setFont(QFont("Segoe UI", 28, QFont.Bold))
-        title.setStyleSheet("color: #ffffff; margin-bottom: 5px;")
         
         subtitle = QLabel("Sécurité Maximale")
         subtitle.setAlignment(Qt.AlignCenter)
-        subtitle.setStyleSheet("color: #8b949e; font-size: 11pt; margin-bottom: 30px;")
+        subtitle.setStyleSheet("color: #8b949e; font-size: 11pt; margin-bottom: 20px; letter-spacing: 1px;")
 
         # Champ mot de passe
         self.password_input = QLineEdit()
@@ -95,14 +110,18 @@ class LoginWindow(QDialog):
         self.password_input.setFixedHeight(50)
         self.password_input.setStyleSheet("""
             QLineEdit {
-                background-color: #0d1117;
-                border: 1px solid #30363d;
-                border-radius: 8px;
+                background-color: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
                 padding: 0 15px;
                 color: white;
-                font-size: 14px;
+                font-size: 15px;
+                selection-background-color: #9C27B0;
             }
-            QLineEdit:focus { border: 1px solid #58a6ff; }
+            QLineEdit:focus { 
+                border: 1px solid #9C27B0; 
+                background-color: rgba(255, 255, 255, 0.05);
+            }
         """)
         
         self.strength_label = QLabel("")
@@ -119,13 +138,50 @@ class LoginWindow(QDialog):
         self.login_button.clicked.connect(self.attempt_login)
         self.login_button.setCursor(Qt.PointingHandCursor)
         self.login_button.setFixedHeight(50)
-        self.login_button.setStyleSheet("background-color: #238636; color: white; border-radius: 8px; font-weight: bold; font-size: 14px;")
+        self.login_button.setStyleSheet("""
+            QPushButton {
+                background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #9C27B0, stop:1 #7B1FA2);
+                color: white;
+                border-radius: 12px;
+                font-weight: bold;
+                font-size: 15px;
+                border: none;
+            }
+            QPushButton:hover { background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #AB47BC, stop:1 #8E24AA); }
+            QPushButton:pressed { background-color: #6A1B9A; }
+        """)
 
         self.create_button = QPushButton("Créer un coffre")
         self.create_button.clicked.connect(self.create_vault)
         self.create_button.setCursor(Qt.PointingHandCursor)
-        self.create_button.setStyleSheet("background-color: #1f6feb; color: white; border-radius: 8px; font-weight: bold; font-size: 14px;")
+        self.create_button.setStyleSheet("""
+            QPushButton {
+                background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #2196F3, stop:1 #1976D2);
+                color: white;
+                border-radius: 12px;
+                font-weight: bold;
+                font-size: 15px;
+                border: none;
+            }
+            QPushButton:hover { background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #42A5F5, stop:1 #1E88E5); }
+            QPushButton:pressed { background-color: #0D47A1; }
+        """)
         self.create_button.setFixedHeight(50)
+
+        self.import_button = QPushButton("Importer un coffre existant")
+        self.import_button.setCursor(Qt.PointingHandCursor)
+        self.import_button.clicked.connect(self.import_vault)
+        self.import_button.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                color: #8b949e;
+                border: 1px solid #30363d;
+                border-radius: 12px;
+                font-size: 13px;
+            }
+            QPushButton:hover { background-color: rgba(255,255,255,0.05); color: white; }
+        """)
+        self.import_button.setFixedHeight(40)
 
         # Assemblage
         card_layout.addStretch()
@@ -138,6 +194,7 @@ class LoginWindow(QDialog):
         card_layout.addSpacing(10)
         card_layout.addWidget(self.login_button)
         card_layout.addWidget(self.create_button)
+        card_layout.addWidget(self.import_button)
         card_layout.addStretch()
 
         main_layout.addWidget(self.card)
@@ -160,11 +217,13 @@ class LoginWindow(QDialog):
         if vault_initialized:
             self.create_button.setVisible(False)
             self.login_button.setVisible(True)
+            self.import_button.setVisible(False)
             self.setWindowTitle("Thanos - Ouvrir le coffre")
             self.strength_label.setVisible(False)
         else:
             self.login_button.setVisible(False)
             self.create_button.setVisible(True)
+            self.import_button.setVisible(True)
             self.setWindowTitle("Thanos - Créer un nouveau coffre")
             self.strength_label.setVisible(True)
 
@@ -175,20 +234,10 @@ class LoginWindow(QDialog):
         if length == 0:
             self.strength_label.setText("")
             return
-
-        score = 0
-        if any(c.islower() for c in text): score += 1
-        if any(c.isupper() for c in text): score += 1
-        if any(c.isdigit() for c in text): score += 1
-        if any(not c.isalnum() for c in text): score += 1
-        if length >= 12: score += 1
-
-        labels = {0: ("❌ Faible", "#ff7b72"), 1: ("❌ Faible", "#ff7b72"), 2: ("⚠️ Moyen", "#d29922"), 
-                  3: ("✅ Fort", "#3fb950"), 4: ("✅ Très fort", "#238636"), 5: ("🔥 Légendaire", "#a371f7")}
         
-        text_label, color = labels.get(score, ("❌ Faible", "#ff7b72"))
-        self.strength_label.setText(text_label)
-        self.strength_label.setStyleSheet(f"color: {color}; font-weight: bold; font-size: 10pt; margin-top: 5px;")
+        res = validate_master_password(text)
+        self.strength_label.setText(res['label'])
+        self.strength_label.setStyleSheet(f"color: {res['color']}; font-weight: bold; font-size: 10pt; margin-top: 5px;")
 
     def _unblock_login(self):
         self._login_blocked = False
@@ -221,6 +270,39 @@ class LoginWindow(QDialog):
             
             self.accept() # Close login window and proceed to main window
         except ValueError as e: # Incorrect password or invalid vault config
+            error_msg = str(e)
+            if "DEVICE_MISMATCH" in error_msg:
+                self.status_label.setText("Nouvel appareil détecté.")
+                QApplication.processEvents()
+                
+                recovery_key, ok = QInputDialog.getText(
+                    self, "Migration de Sécurité",
+                    "Ce coffre est lié à un autre appareil.\n\n"
+                    "Pour autoriser la migration et re-chiffrer vos données,\n"
+                    "veuillez entrer votre Clé de Récupération :",
+                    QLineEdit.Normal
+                )
+                
+                if ok and recovery_key:
+                    try:
+                        self.vault = VaultManager.open_vault(config.VAULT_DB_FILE, master_password, recovery_key.strip())
+                        QMessageBox.information(self, "Migration Réussie", 
+                                              "Votre coffre a été migré avec succès vers cet appareil.\n"
+                                              "L'ancien appareil n'a plus accès.")
+                        
+                        self._incorrect_attempts_count = 0
+                        self.security_manager = SecurityManager(self.db_manager, self.vault.key)
+                        self._flush_pending_logs()
+                        self.security_manager.log_event("VAULT_MIGRATION", {"status": "success"})
+                        self.accept()
+                        return
+                    except Exception as mig_e:
+                        QMessageBox.critical(self, "Échec Migration", f"Erreur : {mig_e}")
+                        return
+                else:
+                    self.status_label.setText("Migration annulée.")
+                    return
+
             self._incorrect_attempts_count += 1
             self._last_attempt_time = datetime.datetime.now()
             
@@ -328,10 +410,66 @@ class LoginWindow(QDialog):
             QMessageBox.warning(self, "Erreur", "Veuillez entrer un mot de passe principal.")
             return
         
+        # Validation stricte avant création
+        val = validate_master_password(master_password)
+        if not val['valid']:
+            QMessageBox.warning(self, "Mot de passe trop faible", f"Sécurité insuffisante :\n{val['feedback']}")
+            return
+
         try:
-            VaultManager.create_vault(config.VAULT_DB_FILE, master_password)
-            QMessageBox.information(self, "Succès", "Coffre-fort créé avec succès. Vous pouvez maintenant vous connecter.")
+            recovery_key = VaultManager.create_vault(config.VAULT_DB_FILE, master_password)
+            
+            msg = QMessageBox(self)
+            msg.setWindowTitle("⚠️ Clé de Récupération - IMPORTANT")
+            msg.setText("Votre coffre-fort a été créé avec succès.")
+            msg.setInformativeText(
+                "Voici votre CLÉ DE RÉCUPÉRATION.\n\n"
+                f"<h2 style='color:#ff7b72; text-align:center;'>{recovery_key}</h2>\n\n"
+                "Copiez-la et conservez-la en lieu sûr (hors de cet ordinateur).\n"
+                "Elle sera **INDISPENSABLE** pour transférer votre coffre sur un autre appareil."
+            )
+            msg.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            msg.setIcon(QMessageBox.Warning)
+            msg.exec()
+            
             self._check_vault_exists()
             self.password_input.clear()
         except Exception as e:
             QMessageBox.critical(self, "Erreur", f"Impossible de créer le coffre-fort: {e}")
+
+    def import_vault(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Sélectionner une sauvegarde ou un coffre", "", "Thanos Files (*.enc *.db)")
+        if file_path:
+            try:
+                if file_path.endswith(".enc"):
+                    # Restauration sécurisée
+                    dialog = QDialog(self)
+                    dialog.setWindowTitle("Restauration Sécurisée")
+                    layout = QVBoxLayout(dialog)
+                    layout.addWidget(QLabel("Fichier chiffré détecté.\nEntrez vos identifiants pour déchiffrer et restaurer :"))
+                    
+                    pw_input = QLineEdit()
+                    pw_input.setPlaceholderText("Mot de passe principal")
+                    pw_input.setEchoMode(QLineEdit.Password)
+                    layout.addWidget(pw_input)
+                    
+                    rk_input = QLineEdit()
+                    rk_input.setPlaceholderText("Clé de récupération")
+                    layout.addWidget(rk_input)
+                    
+                    btn = QPushButton("Restaurer")
+                    btn.clicked.connect(dialog.accept)
+                    layout.addWidget(btn)
+                    
+                    if dialog.exec():
+                        VaultManager.restore_vault(file_path, config.VAULT_DB_FILE, pw_input.text(), rk_input.text().strip())
+                        QMessageBox.information(self, "Succès", "Coffre restauré et migré avec succès.")
+                        self._check_vault_exists()
+                else:
+                    # Import simple (copie)
+                    import shutil
+                    shutil.copy2(file_path, config.VAULT_DB_FILE)
+                    QMessageBox.information(self, "Importation", "Fichier importé. Veuillez vous connecter pour lancer la migration.")
+                    self._check_vault_exists()
+            except Exception as e:
+                QMessageBox.critical(self, "Erreur", f"Impossible d'importer le fichier : {e}")

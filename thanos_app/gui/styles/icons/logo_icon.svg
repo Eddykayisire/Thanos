@@ -1,0 +1,16 @@
+<svg width="512" height="512" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9C27B0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7B1FA2;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Forme du bouclier -->
+  <path d="M50 5 L88 22 V50 Q88 80 50 95 Q12 80 12 50 V22 Z" fill="url(#grad1)" stroke="none" />
+  <!-- Intérieur stylisé (T abstrait / Protection) -->
+  <path d="M50 20 L75 32 V50 Q75 72 50 85 Q25 72 25 50 V32 Z M50 35 V70" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+</svg>

@@ -24,7 +24,12 @@ class ChangePasswordDialog(QDialog):
 
         self.new_pw = QLineEdit()
         self.new_pw.setEchoMode(QLineEdit.Password)
+        self.new_pw.textChanged.connect(self.update_strength)
         form.addRow("Nouveau mot de passe:", self.new_pw)
+
+        self.strength_label = QLabel("")
+        self.strength_label.setStyleSheet("font-weight: bold; margin-left: 5px;")
+        form.addRow("", self.strength_label)
 
         self.confirm_pw = QLineEdit()
         self.confirm_pw.setEchoMode(QLineEdit.Password)
@@ -38,6 +43,14 @@ class ChangePasswordDialog(QDialog):
         btn = QPushButton("Changer le mot de passe")
         btn.clicked.connect(self.on_change)
         layout.addWidget(btn)
+
+    def update_strength(self, text):
+        if not text:
+            self.strength_label.setText("")
+            return
+        res = validate_master_password(text)
+        self.strength_label.setText(res['label'])
+        self.strength_label.setStyleSheet(f"color: {res['color']}; font-weight: bold;")
 
     def on_change(self):
         old = self.old_pw.text()

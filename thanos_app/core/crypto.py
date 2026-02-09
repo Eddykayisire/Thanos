@@ -5,6 +5,7 @@ from cryptography.hazmat.backends import default_backend
 import bcrypt
 import argon2
 from argon2.low_level import Type as Argon2Type
+import secrets
 
 # Argon2id parameters for key derivation (desktop app)
 ARGON2_TIME_COST = 3
@@ -62,3 +63,7 @@ def hash_password(password: str) -> bytes:
 
 def verify_password(password: str, hashed_password: bytes) -> bool:
     return bcrypt.checkpw(password.encode('utf-8'), hashed_password)
+
+def generate_recovery_key() -> str:
+    """Génère une clé de récupération aléatoire (URL-safe base64)."""
+    return secrets.token_urlsafe(24)

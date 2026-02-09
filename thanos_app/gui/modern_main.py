@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup
 from PySide6.QtCore import QAbstractTableModel
-from PySide6.QtGui import QFont, QIcon, QColor
+from PySide6.QtGui import QFont, QIcon, QColor, QPixmap
 import os
 from .styles.dark_theme import apply_dark_theme
 from .styles.base import fill_color
@@ -36,10 +36,30 @@ class ModernLoginPage(QWidget):
         # Left: decorative area
         left = QVBoxLayout()
         left.addStretch()
-        logo = QLabel("THÁNOS")
-        logo.setFont(QFont("Segoe UI", 32, QFont.Bold))
-        logo.setAlignment(Qt.AlignCenter)
-        left.addWidget(logo)
+        
+        # Logo Icon
+        icon_label = QLabel()
+        icon_path = os.path.join(os.path.dirname(__file__), "styles", "icons", "logo_icon.svg")
+        if os.path.exists(icon_path):
+            pix = QPixmap(icon_path)
+            icon_label.setPixmap(pix.scaled(120, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon_label.setAlignment(Qt.AlignCenter)
+            left.addWidget(icon_label)
+
+        # Logo Text
+        text_label = QLabel()
+        text_path = os.path.join(os.path.dirname(__file__), "styles", "icons", "logo_text.svg")
+        if os.path.exists(text_path):
+            pix = QPixmap(text_path)
+            text_label.setPixmap(pix.scaled(280, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        else:
+            text_label.setText("THANOS")
+            text_label.setFont(QFont("Segoe UI", 32, QFont.Bold))
+            text_label.setStyleSheet("color: #9C27B0; letter-spacing: 4px;")
+            
+        text_label.setAlignment(Qt.AlignCenter)
+        left.addWidget(text_label)
+        
         subtitle = QLabel("Votre coffre-fort numérique sécurisé")
         subtitle.setAlignment(Qt.AlignCenter)
         left.addWidget(subtitle)
